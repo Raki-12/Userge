@@ -20,6 +20,7 @@ from pyrogram.types import (
 from pyrogram.errors.exceptions.bad_request_400 import MessageNotModified, MessageIdInvalid
 
 from userge import userge, Message, Config, get_collection
+from userge.core.ext import RawClient
 
 _CATEGORY = {
     'admin': '👨‍✈️',
@@ -182,6 +183,9 @@ if userge.has_bot:
     @userge.bot.on_callback_query(filters=filters.regex(pattern=r"^chgclnt$"))
     @check_owner
     async def callback_chgclnt(callback_query: CallbackQuery):
+        if not RawClient.DUAL_MODE:
+            return await callback_query.answer(
+                "you using [BOT MODE], can't change client.", show_alert=True)
         if Config.USE_USER_FOR_CLIENT_CHECKS:
             Config.USE_USER_FOR_CLIENT_CHECKS = False
         else:
@@ -259,7 +263,7 @@ if userge.has_bot:
                     "🖥 Main Menu", callback_data="mm".encode()))
                 tmp_btns.append(InlineKeyboardButton(
                     "🔄 Refresh", callback_data=f"refresh({cur_pos})".encode()))
-        else:
+        elif RawClient.DUAL_MODE:
             cur_clnt = "👲 USER" if Config.USE_USER_FOR_CLIENT_CHECKS else "🤖 BOT"
             tmp_btns.append(InlineKeyboardButton(
                 f"🔩 Client for Checks and Sudos : {cur_clnt}", callback_data="chgclnt".encode()))
@@ -408,6 +412,28 @@ if userge.has_bot:
                         description="Only he/she can open it",
                         thumb_url="https://imgur.com/download/Inyeb1S",
                         reply_markup=InlineKeyboardMarkup(prvte_msg)
+                    )
+                )
+            elif "pmpermit" in inline_query.query:
+                owner = await userge.get_me()
+                pm_inline_msg = await SAVED_SETTINGS.find_one({'_id': 'CUSTOM_INLINE_PM_MESSAGE'})
+                if pm_inline_msg:
+                    text = pm_inline_msg.get('data')
+                else:
+                    text = f"Hello, welcome to **{owner.first_name}** Dm.\n\nWhat you want to do ?"
+                buttons = [[
+                    InlineKeyboardButton(
+                        "Contact Me", callback_data="pm_contact"),
+                    InlineKeyboardButton(
+                        "Spam here", callback_data="pm_spam")]]
+                results.append(
+                    InlineQueryResultArticle(
+                        id=uuid4(),
+                        title="Pm Permit",
+                        input_message_content=InputTextMessageContent(text),
+                        description="Inline Pm Permit Handler",
+                        thumb_url="https://imgur.com/download/Inyeb1S",
+                        reply_markup=InlineKeyboardMarkup(buttons)
                     )
                 )
         await inline_query.answer(results=results, cache_time=3)

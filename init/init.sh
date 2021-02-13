@@ -14,6 +14,7 @@
 
 trap handleSigTerm TERM
 trap handleSigInt INT
+trap 'echo hi' USR1
 
 initUserge() {
     printLogo
@@ -25,31 +26,31 @@ initUserge() {
 }
 
 startUserge() {
+    startLogBotPolling
     runPythonModule userge "$@"
 }
 
 stopUserge() {
     sendMessage "Exiting Userge ..."
-    exit 0
+    endLogBotPolling
 }
 
 handleSigTerm() {
     log "Exiting With SIGTERM (143) ..."
     stopUserge
-    endLogBotPolling
     exit 143
 }
 
 handleSigInt() {
     log "Exiting With SIGINT (130) ..."
     stopUserge
-    endLogBotPolling
     exit 130
 }
 
 runUserge() {
     initUserge
-    startLogBotPolling
     startUserge "$@"
+    local code=$?
     stopUserge
+    return $code
 }
